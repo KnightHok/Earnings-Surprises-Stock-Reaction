@@ -4,3 +4,4 @@ TICKERS = get_all_tickers()
 
 YF_LIMIT = 24
 DATA_DIR = "data"
+RAW_PRICES_DIR = "raw_prices"

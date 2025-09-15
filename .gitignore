@@ -1,3 +1,9 @@
-Raw Historical Data
+raw_prices
+__pycache__
+*.ipynb_checkpoints
+*.sqlite3
+*.db
+*.parquet
+*.pkl
 *.csv
 venv

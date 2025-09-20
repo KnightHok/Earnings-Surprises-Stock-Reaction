@@ -2,9 +2,6 @@
 -- Earnings Surprises & Stock Reactions – Database Schema (PostgreSQL)
 -- =====================================================================
 
--- 0) Create a tidy namespace
-CREATE SCHEMA IF NOT EXISTS eqr;
-
 -- =====================================================================
 -- 1) Reference: Tickers
 -- =====================================================================

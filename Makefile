@@ -10,14 +10,14 @@ DB_PORT     ?= 1515
 DB_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@localhost:$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
 postgres:
-	docker run --name $(PG_CONTAINER) -p $(DB_PORT):5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -d postgres:12-alpine
+	docker run --name $(PG_CONTAINER) -p $(DB_PORT):5432 -e POSTGRES_USER=$(DB_USER) -e POSTGRES_PASSWORD=$(DB_PASSWORD) -d postgres:12-alpine
 
 stop_postgres:
 	docker stop $(PG_CONTAINER) || true
 	docker rm $(PG_CONTAINER) || true
 
 createdb:
-	docker exec -it $(DB_NAME) createdb --username=root --owner=root eqr
+	docker exec -it $(DB_CONTAINER) createdb --username=root --owner=root eqr
 
 newmigration:
 	$(if $(name),,$(error usage: make newmigration name=your_change))
@@ -49,7 +49,7 @@ upsert-prices:
 
 upsert-events:
 # 1) ensure stagin table exists (no constraints)
-	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS eqr._stage_events (LIKE eqr.earnings INCLUDING DEFAULTS EXCLUDING CONSTRAINTS)"
+	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS eqr._stage_events (LIKE eqr.earnings INCLUDING DEFAULTS EXCLUDING CONSTRAINTS);"
 # 2) empty staging table
 	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "TRUNCATE TABLE eqr._stage_events;"
 # 3) load CSV into staging table
@@ -57,14 +57,14 @@ upsert-events:
 	\copy eqr._stage_events(ticker,report_ts_utc,amc_bmo,eps_actual,eps_consensus,eps_surprise_pct,et_date,source) \
 		FROM 'data/events.csv' CSV HEADER"
 # 4) upsert ot target using your unique (ticker, et_date)
-	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -C "\
+	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "\
 	INSERT INTO eqr.earnings_events \
-		(ticker,report_ts_utc,amc_bmo,eps_actual,eps_consensus,epse_surprise_pct,et_date,source) \
-	SELECT ticker,report_ts_utc,amc_bmo,eps_actual,eps_consensus,epse_surprise_pct,et_date,source \
+		(ticker,report_ts_utc,amc_bmo,eps_actual,eps_consensus,eps_surprise_pct,et_date,source) \
+	SELECT ticker,report_ts_utc,amc_bmo,eps_actual,eps_consensus,eps_surprise_pct,et_date,source \
 	FROM eqr._stage_events \
 	ON CONFLICT (ticker, et_date) DO UPDATE SET \
 		eps_actual = EXCLUDED.eps_actual, \
-		epse_consensus = EXCLUDED.eps_consensus, \
+		eps_consensus = EXCLUDED.eps_consensus, \
 		eps_surprise_pct = EXCLUDED.eps_surprise_pct, \
 		report_ts_utc = EXCLUDED.report_ts_utc, \
 		amc_bmo = EXCLUDED.amc_bmo, \

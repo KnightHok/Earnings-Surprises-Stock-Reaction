@@ -7,17 +7,39 @@ DB_PASSWORD ?= password
 DB_NAME     ?= eqr
 DB_PORT     ?= 1515
 
+MIGRATE_BIN ?= migrate
+
 DB_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@localhost:$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
+help: ## Show this help message
+	@echo "Earnings Project - Available Commands:"
+	@echo ""
+	@echo "Database Setup:"
+	@echo "  postgres       - Start PostgreSQL container"
+	@echo "  stop_postgres  - Stop and remove PostgreSQL container"
+	@echo "  createdb       - Create database inside container"
+	@echo ""
+	@echo "Database Migrations:"
+	@echo "  newmigration name=<name> - Create new migration file"
+	@echo "  migrateup      - Run all pending migrations"
+	@echo "  migratedown    - Rollback last migration"
+	@echo ""
+	@echo "Data Loading:"
+	@echo "  upsert-prices  - Load data/prices.csv into prices table"
+	@echo "  upsert-events  - Load data/events.csv into earnings_events table"
+	@echo ""
+	@echo "Configuration:"
+	@echo "  DB_PORT=$(DB_PORT) DB_NAME=$(DB_NAME) DB_USER=$(DB_USER)"
+
 postgres:
-	docker run --name $(PG_CONTAINER) -p $(DB_PORT):5432 -e POSTGRES_USER=$(DB_USER) -e POSTGRES_PASSWORD=$(DB_PASSWORD) -d postgres:12-alpine
+	docker run --name $(PG_CONTAINER) -p $(DB_PORT):5432 -e POSTGRES_USER=$(DB_USER) -e POSTGRES_PASSWORD=$(DB_PASSWORD) -d $(PG_IMAGE)
 
 stop_postgres:
 	docker stop $(PG_CONTAINER) || true
 	docker rm $(PG_CONTAINER) || true
 
 createdb:
-	docker exec -it $(DB_CONTAINER) createdb --username=root --owner=root eqr
+	docker exec -it $(PG_CONTAINER) createdb --username=$(DB_USER) --owner=$(DB_USER) eqr
 
 newmigration:
 	$(if $(name),,$(error usage: make newmigration name=your_change))
@@ -48,8 +70,8 @@ upsert-prices:
 		ret = EXCLUDED.ret;"
 
 upsert-events:
-# 1) ensure stagin table exists (no constraints)
-	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS eqr._stage_events (LIKE eqr.earnings INCLUDING DEFAULTS EXCLUDING CONSTRAINTS);"
+# 1) ensure staging table exists (no constraints)
+	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS eqr._stage_events (LIKE eqr.earnings_events INCLUDING DEFAULTS EXCLUDING CONSTRAINTS);"
 # 2) empty staging table
 	psql "$(DB_URL)" -v ON_ERROR_STOP=1 -c "TRUNCATE TABLE eqr._stage_events;"
 # 3) load CSV into staging table
@@ -70,5 +92,5 @@ upsert-events:
 		amc_bmo = EXCLUDED.amc_bmo, \
 		source = EXCLUDED.source;"
 
-.PHONY: postgres stop_postgres newmigration migrateup migratedown upsert-prices upsert-events
+.PHONY: help postgres stop_postgres newmigration migrateup migratedown upsert-prices upsert-events
 

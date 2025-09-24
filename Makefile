@@ -25,6 +25,7 @@ help: ## Show this help message
 	@echo "  migratedown    - Rollback last migration"
 	@echo ""
 	@echo "Data Loading:"
+	@echo "  load-tickers   - Enrich ticker metadata from yfinance API"
 	@echo "  upsert-prices  - Load data/prices.csv into prices table"
 	@echo "  upsert-events  - Load data/events.csv into earnings_events table"
 	@echo ""
@@ -92,5 +93,8 @@ upsert-events:
 		amc_bmo = EXCLUDED.amc_bmo, \
 		source = EXCLUDED.source;"
 
-.PHONY: help postgres stop_postgres newmigration migrateup migratedown upsert-prices upsert-events
+load-tickers:
+	python earnings_pipline/load_tickers.py
+
+.PHONY: help postgres stop_postgres newmigration migrateup migratedown upsert-prices upsert-events load-tickers
 

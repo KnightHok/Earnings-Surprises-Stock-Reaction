@@ -1,6 +1,6 @@
 import os, pandas as pd, yfinance as yf
 from .config import TICKERS, YF_LIMIT, DATA_DIR
-from util import to_utc_naive, infer_amc_bmo_from_ts, ensure_float
+from .util import to_utc_naive, infer_amc_bmo_from_ts, ensure_float, et_calendar_date
 
 def main():
     records = []
@@ -26,6 +26,8 @@ def main():
 
             # Apply amc_bmo classification
             df["amc_bmo"] = df["report_ts"].apply(infer_amc_bmo_from_ts)
+            # df["et_date"] = df["report_ts"].apply(et_calendar_date)
+            # df["source"] = "yfinance"
             
             records.append(df[["ticker","report_ts", "amc_bmo", "eps_actual","eps_consensus"]])
         except Exception as e:

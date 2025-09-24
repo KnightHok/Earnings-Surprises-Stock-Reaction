@@ -38,12 +38,13 @@ def merge_events(yf_df, nz_df):
     merged = merged.dropna(subset=["eps_actual","eps_consensus"]).reset_index(drop=True)
 
     # compute eps_surprise_pct
-    merged["eps_surprise_pct"] = merged["eps_surprise_pct"].apply(eps_surprise_pct)
+    # merged["eps_surprise_pct"] = merged["eps_surprise_pct"].apply(eps_surprise_pct)
+    merged["eps_surprise_pct"] = merged.apply(lambda row: eps_surprise_pct(row["eps_actual"], row["eps_consensus"]), axis=1)
 
     # final tidy + save
     merged = merged.sort_values(["report_ts", "ticker"], ascending=[False, True]).reset_index(drop=True)
 
-    out = merged[["ticker","report_ts","amc_bmo","eps_actual","eps_consensus","eps_surprise_pct"]]
+    out = merged[["ticker","report_ts","amc_bmo","eps_actual","eps_consensus","source","et_date","eps_surprise_pct"]]
 
     os.makedirs(DATA_DIR, exist_ok=True)
     out.to_csv(os.path.join(DATA_DIR, "events.csv"), index=False)

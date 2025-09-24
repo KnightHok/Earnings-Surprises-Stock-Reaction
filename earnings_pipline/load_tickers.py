@@ -1,11 +1,13 @@
 import os
 import sys
 import time
+import glob
 import yfinance as yf
 import psycopg2
 from itertools import islice
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from psycopg2.extras import execute_values, RealDictCursor
+from util import get_all_tickers
 
 # CONFIG
 DB_DSN = os.getenv("DB_DSN", "postgresql://root:password@localhost:1515/eqr")
@@ -153,8 +155,26 @@ def load_and_enrich(symbols):
             print(f"Enriched {done}/{total}")
             time.sleep(BATCH_PAUSE)
 
+def get_symbols_from_raw_prices(raw_prices_dir="raw_prices"):
+    """
+    Get all ticker symbols from CSV filenames in the raw_prices directory.
+    Returns a list of symbols (without .csv suffix).
+    """
+    if not os.path.exists(raw_prices_dir):
+        print(f"Warning: {raw_prices_dir} directory not found")
+        return []
+    csv_files = glob.glob(os.path.join(raw_prices_dir, "*"))
+
 
 if __name__ == "__main__":
     # Symbols can be passed as CLI args; if none given, use a small demo set
-    syms = sys.argv[1:] or ["AAPL", "MSFT", "GOOG", "TSLA", "NVDA", "AMZN"]
+    syms = list()
+    if len(sys.argv) > 1:
+        syms = sys.argv[1:]
+    else:
+        syms = get_all_tickers()
+        if not syms:
+            print("No CSV files found in raw_prices folder, using demo symbols")
+            syms = ["AAPL", "MSFT", "GOOG", "TSLA", "NVDA", "AMZN"]
+    print(f"Processing {len(syms)} symbols from raw_prices folder")
     load_and_enrich(syms)

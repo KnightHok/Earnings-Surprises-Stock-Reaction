@@ -39,7 +39,7 @@ def infer_amc_bmo_from_ts(utc_ts):
     else:
         return "INTRADAY"
     
-def surprise_pct(actual, est):
+def eps_surprise_pct(actual, est):
     if pd.isna(actual) or pd.isna(est) or est == 0:
         return np.nan
     return (actual - est) / abs(est)
@@ -59,8 +59,12 @@ def et_calendar_date(utc_ts):
     et_ts = utc_ts.replace(tzinfo=timezone.utc).astimezone(ET)
     return pd.Timestamp(et_ts.date())
 
-def get_all_tickers():    
-    folder_path = "./Raw Historical Data/."
+def get_all_tickers(raw_prices_dir="raw_prices"):    
+    folder_path = raw_prices_dir
+
+    if not os.path.exists(raw_prices_dir):
+        print(f"Warning: {raw_prices_dir} directory not found")
+        return []
 
     # get all tickers
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))

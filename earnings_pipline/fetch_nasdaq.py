@@ -1,6 +1,6 @@
 import os, requests, pandas as pd
 from .config import TICKERS, DATA_DIR
-from .util import to_utc_naive, ensure_float
+from .util import to_utc_naive, ensure_float, et_calendar_date
 
 def main():
     records = []

@@ -16,6 +16,7 @@ help: ## Show this help message
 	@echo ""
 	@echo "Database Setup:"
 	@echo "  postgres       - Start PostgreSQL container"
+	@echo "  start_postgres - Start existing stopped PostgreSQL container"
 	@echo "  stop_postgres  - Stop and remove PostgreSQL container"
 	@echo "  createdb       - Create database inside container"
 	@echo ""
@@ -25,15 +26,23 @@ help: ## Show this help message
 	@echo "  migratedown    - Rollback last migration"
 	@echo ""
 	@echo "Data Loading:"
+	@echo "  fetch-prices   - Fetch and process price data"
+	@echo "  fetch-nasdaq   - Fetch earnings data from Nasdaq API"
+	@echo "  fetch-yfinance - Fetch earnings data from Yahoo Finance API"
+	@echo "  merge-events   - Merge earnings events from multiple sources"
 	@echo "  load-tickers   - Enrich ticker metadata from yfinance API"
 	@echo "  upsert-prices  - Load data/prices.csv into prices table"
 	@echo "  upsert-events  - Load data/events.csv into earnings_events table"
+	@echo "  compute-outcomes - Calculate abnormal returns for earnings events"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  DB_PORT=$(DB_PORT) DB_NAME=$(DB_NAME) DB_USER=$(DB_USER)"
 
 postgres:
 	docker run --name $(PG_CONTAINER) -p $(DB_PORT):5432 -v "$(PWD)"/data:/data -e POSTGRES_USER=$(DB_USER) -e POSTGRES_PASSWORD=$(DB_PASSWORD) -d $(PG_IMAGE)
+
+start_postgres:
+	docker start $(PG_CONTAINER)
 
 stop_postgres:
 	docker stop $(PG_CONTAINER) || true
@@ -96,7 +105,22 @@ upsert-events:
 		source = EXCLUDED.source;"
 
 load-tickers:
-	python earnings_pipline/load_tickers.py
+	python3 earnings_pipline/load_tickers.py
 
-.PHONY: help postgres stop_postgres newmigration migrateup migratedown upsert-prices upsert-events load-tickers
+compute-outcomes:
+	python3 earnings_pipline/compute_outcomes.py
+
+fetch-prices:
+	python3 -m earnings_pipline.fetch_prices
+
+fetch-nasdaq:
+	python3 -m earnings_pipline.fetch_nasdaq
+
+fetch-yfinance:
+	python3 -m earnings_pipline.fetch_yfinance
+
+merge-events:
+	python3 -m earnings_pipline.merge_events
+
+.PHONY: help postgres start_postgres stop_postgres newmigration migrateup migratedown upsert-prices upsert-events load-tickers compute-outcomes fetch-prices fetch-nasdaq fetch-yfinance merge-events
 

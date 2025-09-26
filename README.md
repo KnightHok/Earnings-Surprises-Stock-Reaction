@@ -84,7 +84,7 @@ The project uses PostgreSQL with four main tables:
 ### Prerequisites
 - Docker (for PostgreSQL)
 - Python 3.8+
-- Required Python packages: `pandas`, `yfinance`, `psycopg2`, `pytz`, `requests`
+- Python packages: `pip install -r requirements.txt`
 
 ### Database Setup
 
